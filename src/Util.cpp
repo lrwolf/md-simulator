@@ -13,16 +13,16 @@
 #include <unistd.h>
 #define GETCWD ::getcwd
 
-string getCurrentDir() {
+std::string getCurrentDir() {
     const size_t pathSize = 4096;
     char currentDir[pathSize];
     
     // Check if we received the path
     if (GETCWD(currentDir, pathSize) != NULL) {
-        return string(currentDir);
+        return std::string(currentDir);
     }
     
-    return  string("");
+    return  std::string("");
 }
 
 bool SDKFile::writeBinaryToFile(const char* fileName, const char* binary, size_t numBytes) {
@@ -68,15 +68,15 @@ bool SDKFile::open(const char* fileName) {
     char* str;
     
     // Open file stream
-    fstream f(fileName, (fstream::in | fstream::binary));
+    std::fstream f(fileName, (std::fstream::in | std::fstream::binary));
     
     // Check if we have opened file stream
     if (f.is_open()) {
         size_t sizeFile;
         // Find the stream size
-        f.seekg(0, fstream::end);
+        f.seekg(0, std::fstream::end);
         size = sizeFile = (size_t)f.tellg();
-        f.seekg(0, fstream::beg);
+        f.seekg(0, std::fstream::beg);
         
         str = new char[size + 1];
         if (!str) {

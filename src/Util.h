@@ -12,10 +12,9 @@
 #include <fstream>
 #include <string>
 #include <vector>
-using namespace std;
 
 //! Get current directory
-extern string getCurrentDir();
+extern std::string getCurrentDir();
 
 //! SDKFile for the opencl program processing
 class SDKFile {
@@ -46,7 +45,7 @@ public:
     }
     
     //! Returns a pointer to the string object with the source code
-    const string& source() const {
+    const std::string& source() const {
         return source_;
     }
     
@@ -58,7 +57,7 @@ private:
     SDKFile& operator=(const SDKFile&);
     
     //!< source code of the CL program
-    string source_;
+    std::string source_;
 };
 
 #endif /* defined(__sim__Util__) */

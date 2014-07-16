@@ -8,10 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		2439197219670C460005C8CF /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2439196A19670C460005C8CF /* main.cpp */; };
-		2439197319670C460005C8CF /* MDSim.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2439196B19670C460005C8CF /* MDSim.cpp */; };
 		2439197419670C460005C8CF /* Molecule.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2439196D19670C460005C8CF /* Molecule.cpp */; };
 		2439197519670C460005C8CF /* Util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2439196F19670C460005C8CF /* Util.cpp */; };
-		2439197619670C460005C8CF /* VolumeRendering_Kernels.cl in Sources */ = {isa = PBXBuildFile; fileRef = 2439197119670C460005C8CF /* VolumeRendering_Kernels.cl */; };
+		2439197619670C460005C8CF /* TestKernel.cl in Sources */ = {isa = PBXBuildFile; fileRef = 2439197119670C460005C8CF /* TestKernel.cl */; };
+		244B597019718B8A00DF99C8 /* Simulator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 244B596E19718B8A00DF99C8 /* Simulator.cpp */; };
+		244B597319718D9600DF99C8 /* Sequential.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 244B597119718D9600DF99C8 /* Sequential.cpp */; };
+		2473B8161976CE3E0066D4FC /* Parallel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2473B8141976CE3E0066D4FC /* Parallel.cpp */; };
 		CC5B7DD9184996EA00C453B0 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CC5B7DD8184996EA00C453B0 /* OpenCL.framework */; };
 /* End PBXBuildFile section */
 
@@ -29,14 +31,18 @@
 
 /* Begin PBXFileReference section */
 		2439196A19670C460005C8CF /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		2439196B19670C460005C8CF /* MDSim.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MDSim.cpp; sourceTree = "<group>"; };
-		2439196C19670C460005C8CF /* MDSim.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MDSim.h; sourceTree = "<group>"; };
 		2439196D19670C460005C8CF /* Molecule.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Molecule.cpp; sourceTree = "<group>"; };
 		2439196E19670C460005C8CF /* Molecule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Molecule.h; sourceTree = "<group>"; };
 		2439196F19670C460005C8CF /* Util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Util.cpp; sourceTree = "<group>"; };
 		2439197019670C460005C8CF /* Util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Util.h; sourceTree = "<group>"; };
-		2439197119670C460005C8CF /* VolumeRendering_Kernels.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = VolumeRendering_Kernels.cl; sourceTree = "<group>"; };
-		CC5B7DCE1849966800C453B0 /* md-simulator */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; name = "md-simulator"; path = "/Users/lwolf/md-simulator/build/Debug/md-simulator"; sourceTree = "<absolute>"; };
+		2439197119670C460005C8CF /* TestKernel.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = TestKernel.cl; sourceTree = "<group>"; };
+		244B596D19718B5200DF99C8 /* md-simulator */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "md-simulator"; sourceTree = BUILT_PRODUCTS_DIR; };
+		244B596E19718B8A00DF99C8 /* Simulator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Simulator.cpp; sourceTree = "<group>"; };
+		244B596F19718B8A00DF99C8 /* Simulator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Simulator.h; sourceTree = "<group>"; };
+		244B597119718D9600DF99C8 /* Sequential.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Sequential.cpp; sourceTree = "<group>"; };
+		244B597219718D9600DF99C8 /* Sequential.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Sequential.h; sourceTree = "<group>"; };
+		2473B8141976CE3E0066D4FC /* Parallel.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Parallel.cpp; sourceTree = "<group>"; };
+		2473B8151976CE3E0066D4FC /* Parallel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Parallel.h; sourceTree = "<group>"; };
 		CC5B7DD8184996EA00C453B0 /* OpenCL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenCL.framework; path = System/Library/Frameworks/OpenCL.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -56,13 +62,17 @@
 			isa = PBXGroup;
 			children = (
 				2439196A19670C460005C8CF /* main.cpp */,
-				2439196B19670C460005C8CF /* MDSim.cpp */,
-				2439196C19670C460005C8CF /* MDSim.h */,
 				2439196D19670C460005C8CF /* Molecule.cpp */,
 				2439196E19670C460005C8CF /* Molecule.h */,
 				2439196F19670C460005C8CF /* Util.cpp */,
 				2439197019670C460005C8CF /* Util.h */,
-				2439197119670C460005C8CF /* VolumeRendering_Kernels.cl */,
+				2439197119670C460005C8CF /* TestKernel.cl */,
+				244B596E19718B8A00DF99C8 /* Simulator.cpp */,
+				244B596F19718B8A00DF99C8 /* Simulator.h */,
+				244B597119718D9600DF99C8 /* Sequential.cpp */,
+				244B597219718D9600DF99C8 /* Sequential.h */,
+				2473B8141976CE3E0066D4FC /* Parallel.cpp */,
+				2473B8151976CE3E0066D4FC /* Parallel.h */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -72,6 +82,7 @@
 			children = (
 				CC5B7DD8184996EA00C453B0 /* OpenCL.framework */,
 				2439196919670C460005C8CF /* src */,
+				244B596D19718B5200DF99C8 /* md-simulator */,
 			);
 			sourceTree = "<group>";
 		};
@@ -92,7 +103,7 @@
 			);
 			name = "md-simulator";
 			productName = sim;
-			productReference = CC5B7DCE1849966800C453B0 /* md-simulator */;
+			productReference = 244B596D19718B5200DF99C8 /* md-simulator */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -126,10 +137,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				2439197519670C460005C8CF /* Util.cpp in Sources */,
-				2439197619670C460005C8CF /* VolumeRendering_Kernels.cl in Sources */,
+				2473B8161976CE3E0066D4FC /* Parallel.cpp in Sources */,
+				2439197619670C460005C8CF /* TestKernel.cl in Sources */,
+				244B597019718B8A00DF99C8 /* Simulator.cpp in Sources */,
 				2439197219670C460005C8CF /* main.cpp in Sources */,
 				2439197419670C460005C8CF /* Molecule.cpp in Sources */,
-				2439197319670C460005C8CF /* MDSim.cpp in Sources */,
+				244B597319718D9600DF99C8 /* Sequential.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

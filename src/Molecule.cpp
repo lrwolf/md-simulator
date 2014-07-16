@@ -11,27 +11,6 @@
 #include <string>
 #include "Molecule.h"
 
-const double forceCutoff = 3.0;
-const double forceCutoff2 = forceCutoff * forceCutoff;
-
-
-/*
- //Normalization of Velocities
- int nv = 2*N;
- int ng = nv-4;
- // Scale the velocity to satisfy the partition theorem
- double ek = 0;
- for (i=0; i<N; ++i)
- ek += (Math.pow(m[i].vx,2)+Math.pow(m[i].vy,2));
- double vs = Math.sqrt(1.0*ek*nv/(ng*T));
- for (i=0; i<N; ++i)
- {
- m[i].vx /= vs;
- m[i].vy /= vs;
- 
- }
- */
-
 Molecule::Molecule() {
     Molecule(0.0, 0.0, 0.0);
 }
@@ -76,48 +55,6 @@ void Molecule::updateAcceleration(double fx, double fy, double fz) {
     acceleration[2] += fz;
 }
 
-void Molecule::positionDifference(Molecule* m2) {
-    double dx = position[0] - m2->position[0];
-    double dy = position[1] - m2->position[1];
-    double dz = position[2] - m2->position[2];
-    
-    double dx2 = dx * dx;
-    double dy2 = dy * dy;
-    double dz2 = dz * dz;
-    
-    if (dx2 >= forceCutoff2 || dy2 >= forceCutoff2 || dz2 >= forceCutoff2) {
-        //printTitle("Too far to bother.");
-        return;
-    }
-    
-    double rSquared = dx2 + dy2 + dz2;
-    //  sigma / rSquared
-    double rSquaredInverse = 1.0 / rSquared;
-    double attract = rSquaredInverse * rSquaredInverse * rSquaredInverse;
-    double repel = attract * attract;
-    
-    double fOverR = 24.0 * ((2.0 * repel) - attract) * rSquaredInverse; // * epsilon
-    double fx = fOverR * dx;
-    double fy = fOverR * dy;
-    double fz = fOverR * dz;
-    
-    updateAcceleration(fx, fy, fz);
-    m2->updateAcceleration(0.0 - fx, 0.0 - fy, 0.0 - fz);
-}
-
-void Molecule::addSpringForce(double wallStiffness, double* dimensions) {
-    for (int i = 0; i < 3; i++) {
-        double dimensionMinusHalf = dimensions[i] - 0.5;
-        if (position[i] < 0.5) {
-            acceleration[i] = wallStiffness * (0.5 - position[i]);
-        } else if (position[i] > dimensionMinusHalf) {
-            acceleration[i] = wallStiffness * (dimensionMinusHalf - position[i]);
-        } else {
-            acceleration[i] = 0.0;
-        }
-    }
-}
-
 void Molecule::printTitle(std::string const& title) {
     if (fTitle) {
         std::cout << title << std::endl;
@@ -140,5 +77,5 @@ void Molecule::printAcceleration() {
 }
 
 void Molecule::distanceFromOrigin() {
-    std::cout << sqrt(position[0]*position[0] + position[1]*position[1] + position[2]*position[2])<< std::endl;
+    std::cout << sqrt(position[0]*position[0] + position[1]*position[1] + position[2]*position[2]) << std::endl;
 }

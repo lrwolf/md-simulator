@@ -20,7 +20,6 @@ public:
     void updatePosition(double dt);
     void updateVelocityHalf(double dt);
     void updateAcceleration(double fx, double fy, double fz);
-    void addSpringForce(double wallStiffness, double* dimensions);
     
     void printPosition();
     void printVelocity();
@@ -28,9 +27,6 @@ public:
     void printTitle(std::string const& title);
     void distanceFromOrigin();
     
-    void positionDifference(Molecule* m2);
-    
-private:
     std::array<double,3> position;
     std::array<double,3> velocity;
     std::array<double,3> velocityHalf;

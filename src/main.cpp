@@ -6,22 +6,22 @@
 //
 //
 
-#include "MDSim.h"
 #include <memory>
 #include <stdio.h>
+#include "Parallel.h"
+#include "Sequential.h"
 
 int main(int argc, const char * argv[]) {
-    std::unique_ptr<MDSim> sim(new MDSim);
+    std::unique_ptr<Sequential> sim(new Sequential);
     
-    if (sim->setupCL() != SDK_SUCCESS)
-        return SDK_FAILURE;
+    if (sim->setup() != MD_SUCCESS)
+        return MD_FAILURE;
     
-    if (sim->runCLKernels() != SDK_SUCCESS)
-        return SDK_FAILURE;
-    
-    if (sim->cleanup() != SDK_SUCCESS)
-        return SDK_FAILURE;
+    if (sim->run() != MD_SUCCESS)
+        return MD_FAILURE;
 
-    return SDK_SUCCESS;
+    if (sim->cleanup() != MD_SUCCESS)
+        return MD_FAILURE;
+    
+    return MD_SUCCESS;
 }
-
