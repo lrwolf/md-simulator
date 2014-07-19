@@ -11,6 +11,9 @@
 
 #include "Simulator.h"
 
+#define MOLECULE_DEBUG 0
+#define CHECK_SPRING_CONSTANT 0
+
 class Sequential : public Simulator {
 public:
     Sequential();
@@ -21,6 +24,8 @@ public:
     void computeAccelerations();
     void addSpringForce(Molecule* m);
     void positionDifference(Molecule* m1, Molecule* m2);
+    
+    double forceCutoffMinusHalf;
 };
 
 #endif /* defined(__sim__Sequential__) */

@@ -39,6 +39,9 @@ public:
     double forceCutoff;
     double forceCutoff2;
     
+    double sigma;
+    double epsilon;
+    
     std::unique_ptr<float[]> data;
     std::unique_ptr<float[]> results;
     std::vector<std::unique_ptr<Molecule>> molecules;

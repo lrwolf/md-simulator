@@ -9,10 +9,12 @@
 #include "Simulator.h"
 
 const int Default_CubeSide = 2;
-const double Default_LatticeOffset = 1.0; //sqrtf(3.f)/2;
+const double Default_LatticeOffset = 1.0;
 const double Default_Timestep = 0.025;
-const double Default_WallStiffness = 50.0;
-const double Default_ForceCutoff = 3.0;
+const double Default_ForceCutoff = 10;
+const double Default_Sigma = 1.0;
+const double Default_Epsilon = 1.0;
+const double Default_WallStiffness = 2.0;
 
 Simulator::Simulator() : cubeSide(Default_CubeSide)
     , particleCount(cubeSide*cubeSide*cubeSide)
@@ -20,7 +22,9 @@ Simulator::Simulator() : cubeSide(Default_CubeSide)
     , timestep(Default_Timestep)
     , wallStiffness(Default_WallStiffness)
     , forceCutoff(Default_ForceCutoff)
-    , forceCutoff2(forceCutoff * forceCutoff) {
+    , forceCutoff2(forceCutoff * forceCutoff)
+    , sigma(Default_Sigma)
+    , epsilon(Default_Epsilon) {
 }
 
 int Simulator::setup() {

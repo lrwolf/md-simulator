@@ -6,9 +6,12 @@
 //
 //
 
+#include <vector>
 #include "Sequential.h"
 
-Sequential::Sequential() {}
+Sequential::Sequential() {
+    forceCutoffMinusHalf = forceCutoff - 0.5;
+}
 
 int Sequential::setup() {
     for (int i = 0; i < cubeSide; i++) {
@@ -19,33 +22,49 @@ int Sequential::setup() {
             }
         }
     }
+    
+    // Even parity
+    for (int i = (int)molecules.size()-1; i >= 0; i--) {
+        if (i%2 != 0) {
+            molecules.erase(molecules.begin()+i);
+            particleCount--;
+        }
+    }
+    
     return MD_SUCCESS;
 }
 
 int Sequential::run() {
-    for (int j = 0; j < 40000; j++) {
-        // Single-step
+    int counter = 0;
+    while (true) {
         for (int i = 0; i < particleCount; i++) {
             molecules[i]->updatePosition(timestep);
         }
-        
+
         computeAccelerations();
         
         for (int i = 0; i < particleCount; i++) {
             molecules[i]->updateVelocityHalf(timestep);
         }
-        
-        if (j%40 == 0) {
-            // molecules[0]->printPosition();
-            molecules[0]->distanceFromOrigin();
-            //  molecules[0]->printVelocity();
-            //  molecules[0]->printAcceleration();
-            //  std::cout << "-------------------------" << std::endl;
-            //  molecules[7]->printPosition();
-            //  molecules[7]->printVelocity();
-            //  molecules[7]->printAcceleration();
-            //  std::cout << "-------------------------" << std::endl;
+
+        if (counter%10 == 0) {
+            if (CHECK_SPRING_CONSTANT) {
+                double dx = molecules[0]->position[0];
+                double dy = molecules[0]->position[1];
+                double dz = molecules[0]->position[2];
+                double distanceFromOrigin = dx * dx + dy * dy + dz * dz;
+                if (distanceFromOrigin < 4) {
+                    molecules[0]->distanceFromOrigin();
+                }
+            }
+            if (MOLECULE_DEBUG) {
+                molecules[0]->distanceFromOrigin();
+                molecules[0]->printPosition();
+                molecules[0]->printVelocity();
+                molecules[0]->printAcceleration();
+            }
         }
+        counter = (counter+1)%10;
     }
     
     return MD_SUCCESS;
@@ -72,11 +91,10 @@ void Sequential::computeAccelerations() {
 
 void Sequential::addSpringForce(Molecule* m) {
     for (int i = 0; i < 3; i++) {
-        double dimensionMinusHalf = dimensions[i] - 0.5;
         if (m->position[i] < 0.5) {
             m->acceleration[i] = wallStiffness * (0.5 - m->position[i]);
-        } else if (m->position[i] > dimensionMinusHalf) {
-            m->acceleration[i] = wallStiffness * (dimensionMinusHalf - m->position[i]);
+        } else if (m->position[i] > forceCutoffMinusHalf) {
+            m->acceleration[i] = wallStiffness * (forceCutoffMinusHalf - m->position[i]);
         } else {
             m->acceleration[i] = 0.0;
         }
@@ -91,17 +109,17 @@ void Sequential::positionDifference(Molecule* m1, Molecule* m2) {
     double dx2 = dx * dx;
     double dy2 = dy * dy;
     double dz2 = dz * dz;
+    double rSquared = dx2 + dy2 + dz2;
     
-    if (dx2 >= forceCutoff2 || dy2 >= forceCutoff2 || dz2 >= forceCutoff2) {
+    if (rSquared >= forceCutoff2) {
         return;
     }
     
-    double rSquared = dx2 + dy2 + dz2;
-    double rSquaredInverse = 1.0 / rSquared;    //  sigma / rSquared
+    double rSquaredInverse = sigma / rSquared;
     double attract = rSquaredInverse * rSquaredInverse * rSquaredInverse;
     double repel = attract * attract;
     
-    double fOverR = 24.0 * ((2.0 * repel) - attract) * rSquaredInverse; // * epsilon
+    double fOverR = 24.0 * epsilon * ((2.0 * repel) - attract) * rSquaredInverse;
     double fx = fOverR * dx;
     double fy = fOverR * dy;
     double fz = fOverR * dz;

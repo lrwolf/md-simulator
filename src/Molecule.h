@@ -11,12 +11,15 @@
 
 #include <array>
 
+#define USE_GAUSSIAN_DISTRIBUTION 1
+
 class Molecule {
 public:
     Molecule();
     Molecule(double x, double y, double z);
 
     void setPosition(double x, double y, double z);
+    void setAcceleration(double x, double y, double z);
     void updatePosition(double dt);
     void updateVelocityHalf(double dt);
     void updateAcceleration(double fx, double fy, double fz);
@@ -28,7 +31,6 @@ public:
     void distanceFromOrigin();
     
     std::array<double,3> position;
-    std::array<double,3> velocity;
     std::array<double,3> velocityHalf;
     std::array<double,3> acceleration;
     
