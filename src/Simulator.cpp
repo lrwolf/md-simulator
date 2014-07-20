@@ -27,7 +27,13 @@ Simulator::Simulator() : cubeSide(Default_CubeSide)
     , epsilon(Default_Epsilon) {
 }
 
+Simulator::Simulator(int cubeSide) : Simulator() {
+    this->cubeSide = cubeSide;
+    this->particleCount = cubeSide*cubeSide*cubeSide;
+}
+
 int Simulator::setup() {
+    positions.open("/tmp/positions.txt", std::ios::out | std::ios::app);
     return MD_SUCCESS;
 }
 
@@ -36,5 +42,6 @@ int Simulator::run() {
 }
 
 int Simulator::cleanup() {
+    positions.close();
     return MD_SUCCESS;
 }

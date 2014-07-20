@@ -10,6 +10,7 @@
 #define __sim__Simulator__
 
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -21,6 +22,7 @@
 class Simulator {
 public:
     Simulator();
+    Simulator(int cubeSide);
     
     virtual int setup();
     virtual int run();
@@ -33,8 +35,6 @@ public:
     double timestep;
     
     double wallStiffness;
-    // distance to wall on x, y, and z axes
-    double dimensions[3] = { 50.0, 50.0, 50.0 };
     
     double forceCutoff;
     double forceCutoff2;
@@ -45,6 +45,36 @@ public:
     std::unique_ptr<float[]> data;
     std::unique_ptr<float[]> results;
     std::vector<std::unique_ptr<Molecule>> molecules;
+    
+    std::ofstream positions;
+    
+    /**
+     * Setters
+     */
+    void setLatticeOffset(double latticeOffset) {
+        this->latticeOffset = latticeOffset;
+    }
+    
+    void setTimestep(double timestep) {
+        this->timestep = timestep;
+    }
+    
+    void setWallStiffness(double wallStiffness) {
+        this->wallStiffness = wallStiffness;
+    }
+
+    void setForceCutoff(double forceCutoff) {
+        this->forceCutoff = forceCutoff;
+        this->forceCutoff2 = forceCutoff * forceCutoff;
+    }
+    
+    void setSigma(double sigma) {
+        this->sigma = sigma;
+    }
+    
+    void setEpsilon(double epsilon) {
+        this->epsilon = epsilon;
+    }
 };
 
 #endif /* defined(__sim__Simulator__) */

@@ -11,12 +11,13 @@
 
 #include "Simulator.h"
 
-#define MOLECULE_DEBUG 0
+#define MOLECULE_DEBUG 1
 #define CHECK_SPRING_CONSTANT 0
 
 class Sequential : public Simulator {
 public:
     Sequential();
+    Sequential(int cubeSide);
 
     virtual int setup();
     virtual int run();

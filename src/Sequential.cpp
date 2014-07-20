@@ -9,11 +9,17 @@
 #include <vector>
 #include "Sequential.h"
 
-Sequential::Sequential() {
+Sequential::Sequential() : Simulator() {
+    forceCutoffMinusHalf = forceCutoff - 0.5;
+}
+
+Sequential::Sequential(int cubeSide) : Simulator(cubeSide) {
     forceCutoffMinusHalf = forceCutoff - 0.5;
 }
 
 int Sequential::setup() {
+    Simulator::setup();
+    
     for (int i = 0; i < cubeSide; i++) {
         for (int j = 0; j < cubeSide; j++) {
             for (int k = 0; k < cubeSide; k++) {
@@ -62,8 +68,14 @@ int Sequential::run() {
                 molecules[0]->printPosition();
                 molecules[0]->printVelocity();
                 molecules[0]->printAcceleration();
+                std::cout << std::endl << std::endl;
             }
         }
+        
+        if (positions.is_open()) {
+            positions << molecules[0]->position[0] << "\t" << molecules[0]->position[1] << "\t" << molecules[0]->position[2] << "\n";
+        }
+        
         counter = (counter+1)%10;
     }
     
