@@ -24,9 +24,10 @@ public:
 
     void computeAccelerations();
     void addSpringForce(Molecule* m);
-    void positionDifference(Molecule* m1, Molecule* m2);
+    void addPairwiseForce(Molecule* m1, Molecule* m2);
     
     double forceCutoffMinusHalf;
+    double negForceCutoffMinusHalf;
 };
 
 #endif /* defined(__sim__Sequential__) */

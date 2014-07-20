@@ -11,10 +11,12 @@
 
 Sequential::Sequential() : Simulator() {
     forceCutoffMinusHalf = forceCutoff - 0.5;
+    negForceCutoffMinusHalf = 0.0 - forceCutoffMinusHalf;
 }
 
 Sequential::Sequential(int cubeSide) : Simulator(cubeSide) {
     forceCutoffMinusHalf = forceCutoff - 0.5;
+    negForceCutoffMinusHalf = 0.0 - forceCutoffMinusHalf;
 }
 
 int Sequential::setup() {
@@ -89,31 +91,35 @@ int Sequential::run() {
 void Sequential::computeAccelerations() {
     for (int i = 0; i < particleCount; i++) {
         Molecule* m = molecules[i].get();
-        addSpringForce(m);
+        // zero out accelerations
+        m->setAcceleration(0.0, 0.0, 0.0);
     }
     
     for (int i = 0; i < particleCount; i++) {
         Molecule* m1 = molecules[i].get();
         for (int j = i+1; j < particleCount; j++) {
             Molecule* m2 = molecules[j].get();
-            positionDifference(m1, m2);
+            addPairwiseForce(m1, m2);
         }
+    }
+    
+    for (int i = 0; i < particleCount; i++) {
+        Molecule* m = molecules[i].get();
+        addSpringForce(m);
     }
 }
 
 void Sequential::addSpringForce(Molecule* m) {
     for (int i = 0; i < 3; i++) {
-        if (m->position[i] < 0.5) {
-            m->acceleration[i] = wallStiffness * (0.5 - m->position[i]);
+        if (m->position[i] < negForceCutoffMinusHalf) {
+            m->acceleration[i] += wallStiffness * (negForceCutoffMinusHalf - m->position[i]);
         } else if (m->position[i] > forceCutoffMinusHalf) {
-            m->acceleration[i] = wallStiffness * (forceCutoffMinusHalf - m->position[i]);
-        } else {
-            m->acceleration[i] = 0.0;
+            m->acceleration[i] += wallStiffness * (forceCutoffMinusHalf - m->position[i]);
         }
     }
 }
 
-void Sequential::positionDifference(Molecule* m1, Molecule* m2) {
+void Sequential::addPairwiseForce(Molecule* m1, Molecule* m2) {
     double dx = m1->position[0] - m2->position[0];
     double dy = m1->position[1] - m2->position[1];
     double dz = m1->position[2] - m2->position[2];
@@ -122,11 +128,7 @@ void Sequential::positionDifference(Molecule* m1, Molecule* m2) {
     double dy2 = dy * dy;
     double dz2 = dz * dz;
     double rSquared = dx2 + dy2 + dz2;
-    
-    if (rSquared >= forceCutoff2) {
-        return;
-    }
-    
+
     double rSquaredInverse = sigma / rSquared;
     double attract = rSquaredInverse * rSquaredInverse * rSquaredInverse;
     double repel = attract * attract;
