@@ -33,7 +33,25 @@ Simulator::Simulator(int cubeSide) : Simulator() {
 }
 
 int Simulator::setup() {
-    positions.open("/tmp/positions.txt", std::ios::out | std::ios::app);
+    for (int i = 0; i < cubeSide; i++) {
+        for (int j = 0; j < cubeSide; j++) {
+            for (int k = 0; k < cubeSide; k++) {
+                // Set initial particle position
+                molecules.emplace_back(new Molecule(i*latticeOffset, j*latticeOffset, k*latticeOffset));
+            }
+        }
+    }
+    
+    // Even parity
+    for (int i = (int)molecules.size()-1; i >= 0; i--) {
+        if (i%2 != 0) {
+            molecules.erase(molecules.begin()+i);
+            particleCount--;
+        }
+    }
+    
+    fPositions.open("/tmp/positions.txt", std::ios::out | std::ios::app);
+    fEnergy.open("/tmp/energy.txt", std::ios::out | std::ios::app);
     return MD_SUCCESS;
 }
 
@@ -42,6 +60,7 @@ int Simulator::run() {
 }
 
 int Simulator::cleanup() {
-    positions.close();
+    fEnergy.close();
+    fPositions.close();
     return MD_SUCCESS;
 }

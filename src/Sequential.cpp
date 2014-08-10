@@ -21,30 +21,15 @@ Sequential::Sequential(int cubeSide) : Simulator(cubeSide) {
 
 int Sequential::setup() {
     Simulator::setup();
-    
-    for (int i = 0; i < cubeSide; i++) {
-        for (int j = 0; j < cubeSide; j++) {
-            for (int k = 0; k < cubeSide; k++) {
-                // Set initial particle position
-                molecules.emplace_back(new Molecule(i*latticeOffset, j*latticeOffset, k*latticeOffset));
-            }
-        }
-    }
-    
-    // Even parity
-    for (int i = (int)molecules.size()-1; i >= 0; i--) {
-        if (i%2 != 0) {
-            molecules.erase(molecules.begin()+i);
-            particleCount--;
-        }
-    }
-    
     return MD_SUCCESS;
 }
 
 int Sequential::run() {
-    int counter = 0;
+    long long counter = 0;
     while (true) {
+        // Zero out the energy.
+        energy = 0.0;
+                
         for (int i = 0; i < particleCount; i++) {
             molecules[i]->updatePosition(timestep);
         }
@@ -74,11 +59,14 @@ int Sequential::run() {
             }
         }
         
-        if (positions.is_open()) {
-            positions << molecules[0]->position[0] << "\t" << molecules[0]->position[1] << "\t" << molecules[0]->position[2] << "\n";
+        if (fPositions.is_open()) {
+            fPositions << molecules[0]->position[0] << "\t" << molecules[0]->position[1] << "\t" << molecules[0]->position[2] << "\n";
+        }
+        if (fEnergy.is_open()) {
+            fEnergy << counter << "\t" << energy << "\n";
         }
         
-        counter = (counter+1)%10;
+        counter++;
     }
     
     return MD_SUCCESS;
@@ -111,12 +99,20 @@ void Sequential::computeAccelerations() {
 
 void Sequential::addSpringForce(Molecule* m) {
     for (int i = 0; i < 3; i++) {
+        double delta = 0.0;
         if (m->position[i] < negForceCutoffMinusHalf) {
-            m->acceleration[i] += wallStiffness * (negForceCutoffMinusHalf - m->position[i]);
+            delta = negForceCutoffMinusHalf - m->position[i];
         } else if (m->position[i] > forceCutoffMinusHalf) {
-            m->acceleration[i] += wallStiffness * (forceCutoffMinusHalf - m->position[i]);
+            delta = forceCutoffMinusHalf - m->position[i];
         }
+        
+        if (delta != 0.0) {
+            m->acceleration[i] += wallStiffness * delta;
+        }
+        springRadius[i] = delta;
     }
+    
+    energy += 0.5 * wallStiffness * (springRadius[0] * springRadius[0] + springRadius[1] * springRadius[1] + springRadius[2] * springRadius[2]);
 }
 
 void Sequential::addPairwiseForce(Molecule* m1, Molecule* m2) {
@@ -140,4 +136,7 @@ void Sequential::addPairwiseForce(Molecule* m1, Molecule* m2) {
     
     m1->updateAcceleration(fx, fy, fz);
     m2->updateAcceleration(0.0 - fx, 0.0 - fy, 0.0 - fz);
+    
+    // Energy calculation
+    energy += 4.0 * epsilon * (pow(sigma * rSquaredInverse, 6.0) - pow(sigma * rSquaredInverse, 3.0));
 }

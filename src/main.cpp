@@ -12,7 +12,8 @@
 #include "Sequential.h"
 
 int main(int argc, const char * argv[]) {
-    std::unique_ptr<Sequential> sim(new Sequential);
+    //std::unique_ptr<Sequential> sim(new Sequential);
+    std::unique_ptr<Parallel> sim(new Parallel);
     
     if (sim->setup() != MD_SUCCESS)
         return MD_FAILURE;

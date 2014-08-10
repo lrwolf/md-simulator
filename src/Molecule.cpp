@@ -41,6 +41,11 @@ Molecule::Molecule(double x, double y, double z) : fTitle(true) {
     acceleration[2] = 0.0;
 }
 
+std::array<double, 3>::const_pointer Molecule::getPosition() {
+    std::array<double, 3>::const_pointer ptr = position.begin();
+    return ptr;
+}
+
 void Molecule::setPosition(double x, double y, double z) {
     position[0] = x;
     position[1] = y;

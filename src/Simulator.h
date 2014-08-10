@@ -38,15 +38,14 @@ public:
     
     double forceCutoff;
     double forceCutoff2;
+    double energy;
     
     double sigma;
     double epsilon;
     
-    std::unique_ptr<float[]> data;
-    std::unique_ptr<float[]> results;
     std::vector<std::unique_ptr<Molecule>> molecules;
     
-    std::ofstream positions;
+    std::ofstream fPositions, fEnergy;
     
     /**
      * Setters

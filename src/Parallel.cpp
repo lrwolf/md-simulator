@@ -33,7 +33,8 @@ Parallel::Parallel() : blockSizeX(1)
     , blockSizeY(1) {}
 
 int Parallel::setup() {
-    cl_int status = MD_SUCCESS;
+    cl_int status = Simulator::setup();
+    CheckStatus(status, "Simulator::setup() failed.");
     
     cl_uint numPlatforms;
     status = clGetPlatformIDs(0, NULL, &numPlatforms);
@@ -54,12 +55,10 @@ int Parallel::setup() {
                                        pbuf,
                                        NULL);
             CheckStatus(status, "clGetPlatformInfo");
-            
-            platform = platforms[i];
-            if (!strcmp(pbuf, "Advanced Micro Devices, Inc.")) {
-                break;
-            }
         }
+        
+        // Just grab the first platform.
+        platform = platforms[0];
     }
     CheckConditional(platform != NULL, "platform == NULL");
     
@@ -72,13 +71,26 @@ int Parallel::setup() {
     status = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, numDevices, devices, NULL);
     CheckStatus(status, "clGetDeviceIDs: fetching devices");
     
+    int deviceIndex = 0;
+    for (unsigned i = 0; i < numDevices; ++i) {
+        char pbuf[100];
+        status = clGetDeviceInfo(devices[i],
+                                 CL_DEVICE_NAME,
+                                 sizeof(pbuf),
+                                 pbuf,
+                                 NULL);
+        if (!strncmp(pbuf, "ATI", 3)) {
+            deviceIndex = i;
+        }
+    }
+    
     /* Create the context. */
     context = clCreateContext(0, numDevices, devices, NULL, NULL, &status);
     CheckConditional(context != NULL, "clCreateContextFromType");
     
     /* Create command queue */
     cl_command_queue_properties prop = CL_QUEUE_PROFILING_ENABLE;
-    commandQueue = clCreateCommandQueue(context, devices[0], prop, &status);
+    commandQueue = clCreateCommandQueue(context, devices[deviceIndex], prop, &status);
     CheckStatus(status, "clCreateCommandQueue");
     
     /* Create a CL program using the kernel source */
@@ -113,7 +125,7 @@ int Parallel::setup() {
             //char *buildLog = NULL;
             size_t buildLogSize = 0;
             logStatus = clGetProgramBuildInfo(program,
-                                              devices[0],
+                                              devices[deviceIndex],
                                               CL_PROGRAM_BUILD_LOG,
                                               buildLogSize,
                                               buildLog.get(),
@@ -127,7 +139,7 @@ int Parallel::setup() {
             std::fill_n(buildLog.get(), buildLogSize, 0);
             
             logStatus = clGetProgramBuildInfo(program,
-                                              devices[0],
+                                              devices[deviceIndex],
                                               CL_PROGRAM_BUILD_LOG,
                                               buildLogSize,
                                               buildLog.get(),
@@ -143,12 +155,12 @@ int Parallel::setup() {
     CheckStatus(status, "clBuildProgram");
     
     /* Get a kernel object handle for a kernel with the given name */
-    kernel = clCreateKernel(program, "square", &status);
+    kernel = clCreateKernel(program, "computeAccelerations", &status);
     CheckStatus(status, "clCreateKernel");
     
     /* Check group size against group size returned by kernel */
     status = clGetKernelWorkGroupInfo(kernel,
-                                      devices[0],
+                                      devices[deviceIndex],
                                       CL_KERNEL_WORK_GROUP_SIZE,
                                       sizeof(size_t),
                                       &kernelWorkGroupSize,
@@ -173,32 +185,48 @@ int Parallel::setup() {
 int Parallel::run() {
     cl_int status = MD_SUCCESS;
     
-    data = std::unique_ptr<float[]> (new float[particleCount]);
-    results = std::unique_ptr<float[]> (new float[particleCount]);
-    for (int i = 0; i < particleCount; i++) {
-        data[i] = i * 1.f;
+    data = std::unique_ptr<float[]> (new float[particleCount * 3]);
+    constants = std::unique_ptr<float[]> (new float[2]);
+    // Results holds pairwise forces.
+    results = std::unique_ptr<float[]> (new float[particleCount * particleCount * 3]);
+    
+    // Copy positions to buffer.
+    for (int i = 0, j = 0; i < particleCount; i++, j+= 3) {
+        std::array<double, 3>::const_pointer m = molecules[i]->getPosition();
+        data[j] = m[0];
+        data[j+1] = m[1];
+        data[j+2] = m[2];
     }
     
-    // Allocate input and output buffers, and fill the input with data
-    inputBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(float) * particleCount, NULL, NULL);
+    // Copy constants to buffer;
+    constants[0] = epsilon;
+    constants[1] = sigma;
     
+    // Allocate input and output buffers, and fill the input with data
+    inputBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(float) * particleCount * 3, NULL, NULL);
+    constantsBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(float) * 2, NULL, NULL);
     // Create an output memory buffer for our results
-    outputBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * particleCount, NULL, NULL);
+    outputBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * particleCount * particleCount * 3, NULL, NULL);
     
     // Copy our host buffer of random values to the input device buffer
-    status = clEnqueueWriteBuffer(commandQueue, inputBuffer, CL_TRUE, 0, sizeof(float) * particleCount, data.get(), 0, NULL, NULL);
-    CheckStatus(status, "clEnqueueWriteBuffer");
+    status = clEnqueueWriteBuffer(commandQueue, inputBuffer, CL_TRUE, 0, sizeof(float) * particleCount * 3, data.get(), 0, NULL, NULL);
+    CheckStatus(status, "clEnqueueWriteBuffer: inputs");
+    status = clEnqueueWriteBuffer(commandQueue, constantsBuffer, CL_TRUE, 0, sizeof(float) * 2, constants.get(), 0, NULL, NULL);
+    CheckStatus(status, "clEnqueueWriteBuffer: constants");
     
-    size_t global = particleCount;
+    size_t global = particleCount * particleCount;
+    size_t local = particleCount;
     
     // Set the arguments to our kernel, and enqueue it for execution
     clSetKernelArg(kernel, 0, sizeof(cl_mem), &inputBuffer);
-    clSetKernelArg(kernel, 1, sizeof(cl_mem), &outputBuffer);
-    clSetKernelArg(kernel, 2, sizeof(unsigned int), &global);
+    clSetKernelArg(kernel, 1, sizeof(cl_mem), &constantsBuffer);
+    clSetKernelArg(kernel, 2, sizeof(cl_mem), &outputBuffer);
+    clSetKernelArg(kernel, 3, sizeof(unsigned int), &particleCount);
     if (kernelWorkGroupSize > global) {
         kernelWorkGroupSize = global;
     }
-    status = clEnqueueNDRangeKernel(commandQueue, kernel, 1, NULL, &global, &kernelWorkGroupSize, 0, NULL, NULL);
+    
+    status = clEnqueueNDRangeKernel(commandQueue, kernel, 1, NULL, &global, &local, 0, NULL, NULL);
     CheckStatus(status, "clEnqueueNDRangeKernel");
     
     // Force the command queue to get processed, wait until all commands are complete
@@ -206,22 +234,12 @@ int Parallel::run() {
     CheckStatus(status, "commandQueue");
     
     // Read back the results
-    status = clEnqueueReadBuffer(commandQueue, outputBuffer, CL_TRUE, 0, sizeof(float) * particleCount, results.get(), 0, NULL, NULL);
+    status = clEnqueueReadBuffer(commandQueue, outputBuffer, CL_TRUE, 0, sizeof(float) * particleCount * particleCount * 3, results.get(), 0, NULL, NULL);
     CheckStatus(status, "clEnqueueReadBuffer");
     
-    for (int i = 0; i < particleCount; i++) {
-        std::cout << "data: " << data[i] << std::endl;
-        std::cout << "result: " << results[i] << std::endl;
+    for (int i = 0; i < global; i+= local) {
+        std::cout << i/local << ": " << results[i*3] << "," << results[i*3+1] << ", " << results[i*3+2] << std::endl;
     }
-    
-    // Validate our results
-    int correct = 0;
-    for (int i = 0; i < particleCount; i++) {
-        correct += (results[i] == data[i] * data[i]) ? 1 : 0;
-    }
-    
-    // Print a brief summary detailing the results
-    printf("Computed '%d/%d' correct values!\n", correct, particleCount);
     
     return MD_SUCCESS;
 }

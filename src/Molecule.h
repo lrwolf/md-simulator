@@ -18,6 +18,7 @@ public:
     Molecule();
     Molecule(double x, double y, double z);
 
+    std::array<double, 3>::const_pointer getPosition();
     void setPosition(double x, double y, double z);
     void setAcceleration(double x, double y, double z);
     void updatePosition(double dt);

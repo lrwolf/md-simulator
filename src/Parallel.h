@@ -20,6 +20,10 @@ public:
     virtual int run();
     virtual int cleanup();
     
+    std::unique_ptr<float[]> data;
+    std::unique_ptr<float[]> constants;
+    std::unique_ptr<float[]> results;
+    
     cl_context context;                 /**< CL context */
     cl_command_queue commandQueue;      /**< CL command queue */
     cl_program program;                 /**< CL program  */
@@ -30,6 +34,7 @@ public:
     size_t blockSizeY;                  /**< Work-group size in y-direction */
     
     cl_mem inputBuffer;
+    cl_mem constantsBuffer;
     cl_mem outputBuffer;
 };
 

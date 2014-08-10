@@ -28,6 +28,8 @@ public:
     
     double forceCutoffMinusHalf;
     double negForceCutoffMinusHalf;
+    
+    std::array<double, 3> springRadius;
 };
 
 #endif /* defined(__sim__Sequential__) */
