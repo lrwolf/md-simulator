@@ -12,12 +12,14 @@
 #include <OpenCL/OpenCL.h>
 #include "Simulator.h"
 
+#define NUM_CONSTANTS 5
+
 class Parallel : public Simulator {
 public:
     Parallel();
     
     virtual int setup();
-    virtual int run();
+    virtual int computeAccelerations();
     virtual int cleanup();
     
     std::unique_ptr<float[]> data;
@@ -30,9 +32,9 @@ public:
     cl_kernel kernel;                   /**< CL kernel */
 
     size_t kernelWorkGroupSize;         /**< Group Size returned by kernel */
-    size_t blockSizeX;                  /**< Work-group size in x-direction */
-    size_t blockSizeY;                  /**< Work-group size in y-direction */
-    
+    size_t global;
+    size_t local;
+   
     cl_mem inputBuffer;
     cl_mem constantsBuffer;
     cl_mem outputBuffer;

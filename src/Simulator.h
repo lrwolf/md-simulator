@@ -18,6 +18,8 @@
 
 #define MD_SUCCESS 0
 #define MD_FAILURE -1
+#define MOLECULE_DEBUG 0
+#define CHECK_SPRING_CONSTANT 0
 
 class Simulator {
 public:
@@ -26,6 +28,7 @@ public:
     
     virtual int setup();
     virtual int run();
+    virtual int computeAccelerations();
     virtual int cleanup();
 
     int cubeSide;
@@ -34,6 +37,8 @@ public:
     double latticeOffset;
     double timestep;
     
+    double forceCutoffMinusHalf;
+    double negForceCutoffMinusHalf;
     double wallStiffness;
     
     double forceCutoff;

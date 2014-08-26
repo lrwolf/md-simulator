@@ -11,23 +11,15 @@
 
 #include "Simulator.h"
 
-#define MOLECULE_DEBUG 1
-#define CHECK_SPRING_CONSTANT 0
-
 class Sequential : public Simulator {
 public:
     Sequential();
     Sequential(int cubeSide);
 
-    virtual int setup();
-    virtual int run();
-
-    void computeAccelerations();
+    virtual int computeAccelerations();
+    
     void addSpringForce(Molecule* m);
     void addPairwiseForce(Molecule* m1, Molecule* m2);
-    
-    double forceCutoffMinusHalf;
-    double negForceCutoffMinusHalf;
     
     std::array<double, 3> springRadius;
 };

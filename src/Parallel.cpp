@@ -29,10 +29,12 @@ char *print_cl_errstring(cl_int err) { switch (err) { case CL_SUCCESS: return st
 /**
  * CL simulator class
  */
-Parallel::Parallel() : blockSizeX(1)
-    , blockSizeY(1) {}
+Parallel::Parallel() {}
 
 int Parallel::setup() {
+    /**
+     * OpenCL initialization.
+     */
     cl_int status = Simulator::setup();
     CheckStatus(status, "Simulator::setup() failed.");
     
@@ -166,65 +168,66 @@ int Parallel::setup() {
                                       &kernelWorkGroupSize,
                                       0);
     CheckStatus(status, "clGetKernelWorkGroupInfo");
+    DEBUG_STDOUT("kernelWorkGroupSize: " << kernelWorkGroupSize);
     
-    while ((blockSizeX * blockSizeY) < kernelWorkGroupSize) {
-        if (2 * blockSizeX * blockSizeY <= kernelWorkGroupSize) {
-            blockSizeX <<= 1;
-        }
-        if (2 * blockSizeX * blockSizeY <= kernelWorkGroupSize) {
-            blockSizeY <<= 1;
-        }
+    /**
+     * Initialize some simulator data structures.
+     */
+    global = particleCount * particleCount;
+    local = particleCount;
+    
+    if (global * local > kernelWorkGroupSize) {
+        DEBUG_STDERR("WARNING - global * local > kernelWorkGroupSize; global: " << global << ", local: " << local << ", kernelWorkGroupSize: " << kernelWorkGroupSize);
+        return MD_FAILURE;
     }
     
-    DEBUG_STDOUT("blockSizeX: " << blockSizeX);
-    DEBUG_STDOUT("blockSizeY: " << blockSizeY);
-    
-    return MD_SUCCESS;
-}
-
-int Parallel::run() {
-    cl_int status = MD_SUCCESS;
-    
+    // Data holds the molecule positions.
     data = std::unique_ptr<float[]> (new float[particleCount * 3]);
-    constants = std::unique_ptr<float[]> (new float[2]);
-    // Results holds pairwise forces.
-    results = std::unique_ptr<float[]> (new float[particleCount * particleCount * 3]);
     
-    // Copy positions to buffer.
-    for (int i = 0, j = 0; i < particleCount; i++, j+= 3) {
-        std::array<double, 3>::const_pointer m = molecules[i]->getPosition();
-        data[j] = m[0];
-        data[j+1] = m[1];
-        data[j+2] = m[2];
-    }
+    // Constants holds simulator constants.
+    constants = std::unique_ptr<float[]> (new float[NUM_CONSTANTS]);
     
     // Copy constants to buffer;
     constants[0] = epsilon;
     constants[1] = sigma;
+    constants[2] = negForceCutoffMinusHalf;
+    constants[3] = forceCutoffMinusHalf;
+    constants[4] = wallStiffness;
+    
+    // Results holds pairwise forces.
+    results = std::unique_ptr<float[]> (new float[particleCount * particleCount * 3]);
+    
+    return MD_SUCCESS;
+}
+
+int Parallel::computeAccelerations() {
+    cl_int status = MD_SUCCESS;
+    
+    // Copy positions to buffer.
+    for (int i = 0, j = 0; i < particleCount; i++, j+= 3) {
+        std::array<double, 3>::const_pointer p = molecules[i]->getPosition();
+        data[j] = p[0];
+        data[j+1] = p[1];
+        data[j+2] = p[2];
+    }
     
     // Allocate input and output buffers, and fill the input with data
     inputBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(float) * particleCount * 3, NULL, NULL);
-    constantsBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(float) * 2, NULL, NULL);
+    constantsBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(float) * NUM_CONSTANTS, NULL, NULL);
     // Create an output memory buffer for our results
-    outputBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * particleCount * particleCount * 3, NULL, NULL);
+    outputBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(float) * particleCount * particleCount * 3, NULL, NULL);
     
     // Copy our host buffer of random values to the input device buffer
     status = clEnqueueWriteBuffer(commandQueue, inputBuffer, CL_TRUE, 0, sizeof(float) * particleCount * 3, data.get(), 0, NULL, NULL);
     CheckStatus(status, "clEnqueueWriteBuffer: inputs");
-    status = clEnqueueWriteBuffer(commandQueue, constantsBuffer, CL_TRUE, 0, sizeof(float) * 2, constants.get(), 0, NULL, NULL);
+    status = clEnqueueWriteBuffer(commandQueue, constantsBuffer, CL_TRUE, 0, sizeof(float) * NUM_CONSTANTS, constants.get(), 0, NULL, NULL);
     CheckStatus(status, "clEnqueueWriteBuffer: constants");
-    
-    size_t global = particleCount * particleCount;
-    size_t local = particleCount;
-    
+
     // Set the arguments to our kernel, and enqueue it for execution
     clSetKernelArg(kernel, 0, sizeof(cl_mem), &inputBuffer);
     clSetKernelArg(kernel, 1, sizeof(cl_mem), &constantsBuffer);
     clSetKernelArg(kernel, 2, sizeof(cl_mem), &outputBuffer);
     clSetKernelArg(kernel, 3, sizeof(unsigned int), &particleCount);
-    if (kernelWorkGroupSize > global) {
-        kernelWorkGroupSize = global;
-    }
     
     status = clEnqueueNDRangeKernel(commandQueue, kernel, 1, NULL, &global, &local, 0, NULL, NULL);
     CheckStatus(status, "clEnqueueNDRangeKernel");
@@ -236,12 +239,21 @@ int Parallel::run() {
     // Read back the results
     status = clEnqueueReadBuffer(commandQueue, outputBuffer, CL_TRUE, 0, sizeof(float) * particleCount * particleCount * 3, results.get(), 0, NULL, NULL);
     CheckStatus(status, "clEnqueueReadBuffer");
-    
-    for (int i = 0; i < global; i+= local) {
-        std::cout << i/local << ": " << results[i*3] << "," << results[i*3+1] << ", " << results[i*3+2] << std::endl;
+
+    for (int i = 0, j = 0; j < global; i++, j+= local) {
+        molecules[i]->setAcceleration(results[j*3], results[j*3+1], results[j*3+2]);
     }
     
-    return MD_SUCCESS;
+    status = clReleaseMemObject(outputBuffer);
+    CheckStatus(status, "clReleaseMemObject outputBuffer");
+    
+    status = clReleaseMemObject(constantsBuffer);
+    CheckStatus(status, "clReleaseMemObject constantsBuffer");
+    
+    status = clReleaseMemObject(inputBuffer);
+    CheckStatus(status, "clReleaseMemObject inputBuffer");
+    
+    return status;
 }
 
 int Parallel::cleanup() {
@@ -253,12 +265,6 @@ int Parallel::cleanup() {
     
     status = clReleaseProgram(program);
     CheckStatus(status, "clReleaseProgram");
-    
-    status = clReleaseMemObject(inputBuffer);
-    CheckStatus(status, "clReleaseMemObject inputBuffer");
-    
-    status = clReleaseMemObject(outputBuffer);
-    CheckStatus(status, "clReleaseMemObject outputBuffer");
     
     status = clReleaseCommandQueue(commandQueue);
     CheckStatus(status, "clReleaseCommandQueue");

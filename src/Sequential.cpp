@@ -9,74 +9,11 @@
 #include <vector>
 #include "Sequential.h"
 
-Sequential::Sequential() : Simulator() {
-    forceCutoffMinusHalf = forceCutoff - 0.5;
-    negForceCutoffMinusHalf = 0.0 - forceCutoffMinusHalf;
-}
+Sequential::Sequential() : Simulator() {}
 
-Sequential::Sequential(int cubeSide) : Simulator(cubeSide) {
-    forceCutoffMinusHalf = forceCutoff - 0.5;
-    negForceCutoffMinusHalf = 0.0 - forceCutoffMinusHalf;
-}
+Sequential::Sequential(int cubeSide) : Simulator(cubeSide) {}
 
-int Sequential::setup() {
-    Simulator::setup();
-    return MD_SUCCESS;
-}
-
-int Sequential::run() {
-    long long counter = 0;
-    while (true) {
-        // Zero out the energy.
-        energy = 0.0;
-                
-        for (int i = 0; i < particleCount; i++) {
-            molecules[i]->updatePosition(timestep);
-        }
-
-        computeAccelerations();
-        
-        for (int i = 0; i < particleCount; i++) {
-            molecules[i]->updateVelocityHalf(timestep);
-        }
-
-        if (counter%10 == 0) {
-            if (CHECK_SPRING_CONSTANT) {
-                double dx = molecules[0]->position[0];
-                double dy = molecules[0]->position[1];
-                double dz = molecules[0]->position[2];
-                double distanceFromOrigin = dx * dx + dy * dy + dz * dz;
-                if (distanceFromOrigin < 4) {
-                    molecules[0]->distanceFromOrigin();
-                }
-            }
-            if (MOLECULE_DEBUG) {
-                molecules[0]->distanceFromOrigin();
-                molecules[0]->printPosition();
-                molecules[0]->printVelocity();
-                molecules[0]->printAcceleration();
-                std::cout << std::endl << std::endl;
-            }
-        }
-        
-        if (fPositions.is_open()) {
-            fPositions << molecules[0]->position[0] << "\t" << molecules[0]->position[1] << "\t" << molecules[0]->position[2] << "\n";
-        }
-        if (fEnergy.is_open()) {
-            fEnergy << counter << "\t" << energy << "\n";
-        }
-        
-        counter++;
-    }
-    
-    return MD_SUCCESS;
-}
-
-
-/**
- * Acceleration computations
- */
-void Sequential::computeAccelerations() {
+int Sequential::computeAccelerations() {
     for (int i = 0; i < particleCount; i++) {
         Molecule* m = molecules[i].get();
         // zero out accelerations
@@ -95,6 +32,8 @@ void Sequential::computeAccelerations() {
         Molecule* m = molecules[i].get();
         addSpringForce(m);
     }
+    
+    return MD_SUCCESS;
 }
 
 void Sequential::addSpringForce(Molecule* m) {
